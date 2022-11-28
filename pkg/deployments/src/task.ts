@@ -8,12 +8,14 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import logger from './logger';
 import Verifier from './verifier';
 import { deploy, deploymentTxData, instanceAt } from './contracts';
+import { deployZk } from './contractsZk';
 
 import {
   NETWORKS,
   Network,
   Libraries,
   Artifact,
+  ZkSyncArtifact,
   Input,
   Output,
   Param,
@@ -116,8 +118,14 @@ export default class Task {
     let instance: Contract;
     const output = this.output({ ensure: false });
     if (force || !output[name]) {
-      instance = await deploy(this.artifact(name), args, from, libs);
-      this.save({ [name]: instance });
+      if (this.network.includes('zk')) {
+        const factoryDeps = this.extractFactoryDeps(this.artifact(name) as ZkSyncArtifact);
+        instance = await deployZk(this.artifact(name) as ZkSyncArtifact, args, from, factoryDeps, libs);
+        this.save({ [name]: instance });
+      } else {
+        instance = await deploy(this.artifact(name), args, from, libs);
+        this.save({ [name]: instance });
+      }
       logger.success(`Deployed ${name} at ${instance.address}`);
 
       if (this.mode === TaskMode.LIVE) {
@@ -222,18 +230,19 @@ export default class Task {
   }
 
   buildInfo(fileName: string): BuildInfo {
-    const buildInfoDir = this._dirAt(this.dir(), 'build-info');
+    const buildInfoDir = this.network.includes('zk') ? this._dirAt(this.dir(), 'build-info/zk') : this._dirAt(this.dir(), 'build-info');
     const artifactFile = this._fileAt(buildInfoDir, `${extname(fileName) ? fileName : `${fileName}.json`}`);
     return JSON.parse(fs.readFileSync(artifactFile).toString());
   }
 
   buildInfos(): Array<BuildInfo> {
-    const buildInfoDir = this._dirAt(this.dir(), 'build-info');
+    const buildInfoDir = this.network.includes('zk') ? this._dirAt(this.dir(), 'build-info/zk') : this._dirAt(this.dir(), 'build-info');
     return fs.readdirSync(buildInfoDir).map((fileName) => this.buildInfo(fileName));
   }
 
-  artifact(contractName: string, fileName?: string): Artifact {
-    const buildInfoDir = this._dirAt(this.dir(), 'build-info');
+  artifact(contractName: string, fileName?: string): Artifact | ZkSyncArtifact {
+
+    const buildInfoDir = this.network.includes('zk') ? this._dirAt(this.dir(), 'build-info/zk') : this._dirAt(this.dir(), 'build-info');
     const builds: {
       [sourceName: string]: { [contractName: string]: CompilerOutputContract };
     } = this._existsFile(path.join(buildInfoDir, `${fileName || contractName}.json`))
@@ -246,6 +255,19 @@ export default class Task {
 
     if (!sourceName) throw Error(`Could not find artifact for ${contractName}`);
     return builds[sourceName][contractName];
+  }
+
+  extractFactoryDeps(artifact: ZkSyncArtifact): string[] {
+    // Load all the dependency bytecodes.
+    // We transform it into an array of bytecodes.
+    const factoryDeps: string[] = [];
+    for (const dependencyHash in artifact.factoryDeps) {
+        const dependencyContract = artifact.factoryDeps[dependencyHash];
+        const dependencyBytecodeString = this.artifact(dependencyContract).evm.bytecode.toString();
+        factoryDeps.push(dependencyBytecodeString);
+    }
+
+    return factoryDeps;
   }
 
   actionId(contractName: string, signature: string): string {

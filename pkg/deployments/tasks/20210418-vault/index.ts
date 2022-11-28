@@ -13,6 +13,6 @@ export default async (task: Task, { force, from }: TaskRunOptions = {}): Promise
   await task.verify('ProtocolFeesCollector', feeCollector, feeCollectorArgs);
   await task.save({ ProtocolFeesCollector: feeCollector });
 
-  const helpersArgs = [vault.address];
-  await task.deployAndVerify('BalancerHelpers', helpersArgs, from, force);
+  // const helpersArgs = [vault.address];
+  // await task.deployAndVerify('BalancerHelpers', helpersArgs, from, force);
 };

@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-wit
 
 import Task from './task';
 
-export const NETWORKS = ['goerli', 'kovan', 'mainnet', 'rinkeby', 'ropsten', 'polygon', 'arbitrum', 'optimism'];
+export const NETWORKS = ['goerli', 'kovan', 'mainnet', 'rinkeby', 'ropsten', 'polygon', 'arbitrum', 'optimism', 'zktestnet'];
 
 export type Network = typeof NETWORKS[number];
 
@@ -41,6 +41,10 @@ export type RawOutput = {
 };
 
 export type Libraries = { [key: string]: string };
+export interface FactoryDeps {
+  // A mapping from the contract hash to the contract bytecode.
+  [contractHash: string]: string;
+}
 
 export type Artifact = {
   abi: unknown[];
@@ -52,3 +56,9 @@ export type Artifact = {
     };
   };
 };
+export interface ZkSyncArtifact extends Artifact {
+  // List of factory dependencies of a contract.
+  factoryDeps: FactoryDeps;
+  // Mapping from the bytecode to the zkEVM assembly (used for tracing).
+  sourceMapping: string;
+}

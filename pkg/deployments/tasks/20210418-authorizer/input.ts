@@ -21,4 +21,7 @@ export default {
   goerli: {
     admin: '0xE0a171587b1Cae546E069A943EDa96916F5EE977',
   },
+  zktestnet: {
+    admin: '0xE0a171587b1Cae546E069A943EDa96916F5EE977',
+  },
 };

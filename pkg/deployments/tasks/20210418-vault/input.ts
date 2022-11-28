@@ -47,4 +47,10 @@ export default {
     pauseWindowDuration: 3 * MONTH,
     bufferPeriodDuration: MONTH,
   },
+  zktestnet: {
+    Authorizer,
+    weth: '0xaf9B381B3a865e6253eD58Dc691A980C12df1B6e',
+    pauseWindowDuration: 3 * MONTH,
+    bufferPeriodDuration: MONTH,
+  },
 };
